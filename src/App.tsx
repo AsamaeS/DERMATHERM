@@ -87,6 +87,7 @@ export default function App() {
   return (
     <div className="relative min-h-screen">
       <div className="ambient" />
+      <div className="ambient-contours" />
 
       {/* top bar */}
       <div className="fixed top-0 left-0 right-0 z-40">
@@ -188,34 +189,51 @@ export default function App() {
             {dossierA()}
             {dossierB()}
 
-            <footer className="border-t border-line/60 pt-8 mt-8">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-heat2 mb-2">Division of labour</p>
-                  <ul className="text-[12.5px] text-paper/75 space-y-1.5 leading-relaxed">
-                    <li><b className="text-paper">Solver</b> — computes the physics.</li>
-                    <li><b className="text-paper">PINN</b> — learns a physics-constrained surrogate.</li>
-                    <li><b className="text-paper">Qwen</b> — extracts and explains literature; never computes.</li>
-                    <li><b className="text-paper">Wolfram</b> — independent numerical referee.</li>
-                  </ul>
+            <footer className="border-t border-line/60 pt-10 mt-8">
+              <div className="flex flex-wrap items-start justify-between gap-8">
+                <div className="grid md:grid-cols-3 gap-8 flex-1 min-w-[300px]">
+                  <div>
+                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-heat2 mb-3">Division of labour</p>
+                    <ul className="text-[12.5px] text-paper/75 space-y-2 leading-relaxed">
+                      <li className="hover:text-paper transition-colors"><b className="text-paper">Solver</b> — computes the physics.</li>
+                      <li className="hover:text-paper transition-colors"><b className="text-paper">PINN</b> — learns a physics-constrained surrogate.</li>
+                      <li className="hover:text-paper transition-colors"><b className="text-paper">Qwen</b> — extracts &amp; explains literature; never computes.</li>
+                      <li className="hover:text-paper transition-colors"><b className="text-paper">Wolfram</b> — independent numerical referee.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-aqua2 mb-3">Non-claims</p>
+                    <p className="text-[12.5px] text-paper/75 leading-relaxed">
+                      DERMATHERM is a computational research prototype. It does not diagnose, treat or predict
+                      medical conditions; it does not score human thermal comfort; it does not certify
+                      materials; it reports simulated behaviour of declared parameters against a numerical
+                      reference.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-dim mb-3">Artifact</p>
+                    <p className="text-[12.5px] text-paper/75 leading-relaxed">
+                      Dossier v0.1 · pre-registration draft · fields in §13–14 are computed in-browser at
+                      render time · references flagged per DOI-verification rule (§24).
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-aqua2 mb-2">Non-claims</p>
-                  <p className="text-[12.5px] text-paper/75 leading-relaxed">
-                    DERMATHERM is a computational research prototype. It does not diagnose, treat or predict
-                    medical conditions; it does not score human thermal comfort; it does not certify materials;
-                    it reports simulated behaviour of declared parameters against a numerical reference.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-dim mb-2">Artifact</p>
-                  <p className="text-[12.5px] text-paper/75 leading-relaxed">
-                    Dossier v0.1 · pre-registration draft · fields in §13–14 are computed in-browser at render
-                    time · references flagged per DOI-verification rule (§24).
-                  </p>
-                </div>
+                <a
+                  href="#top"
+                  className="group corner-frame relative border border-line bg-ink2/70 rounded-md px-5 py-4 card-live card-heat flex items-center gap-3"
+                >
+                  <span className="w-8 h-8 rounded-sm border border-heat/50 flex items-center justify-center text-heat group-hover:bg-heat group-hover:text-ink transition-colors">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M7 12V2M3 6l4-4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <span>
+                    <span className="block font-mono text-[9px] tracking-[0.22em] uppercase text-dim group-hover:text-heat2 transition-colors">back to interface</span>
+                    <span className="block font-display font-semibold text-[14px] text-paper">fig. 0 ↑</span>
+                  </span>
+                </a>
               </div>
-              <p className="mt-8 font-mono text-[10px] text-dim tracking-[0.14em] uppercase">
+              <p className="mt-10 font-mono text-[10px] text-dim tracking-[0.14em] uppercase border-t border-line/40 pt-5">
                 DERMATHERM — physics-informed ML for the skin–textile interface · optimize for defensible, not impressive
               </p>
             </footer>

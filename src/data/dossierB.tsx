@@ -443,29 +443,30 @@ err = NIntegrate[(c[x, y, ts] - cRef[x, y])^2, {x, 0, 1}, {y, 0, 1}]  (* vs our 
           medical statements. The three layers stay strictly separated:
         </P>
         <Reveal>
-          <div className="grid md:grid-cols-3 gap-3">
-            <Card className="p-4 border-aqua/30">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-aqua2 mb-2">① Observation</p>
+          <div className="grid md:grid-cols-2 gap-3">
+            <Card className="p-4 border-aqua/30 card-live">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-aqua2 mb-2">① Observation — allowed</p>
               <p className="text-[13px] text-paper/80 leading-relaxed">
                 Observable, non-diagnostic skin characteristics (e.g. surface redness intensity, shine/sweat
-                proxies, texture statistics) recorded over time and environment. Described, not interpreted.
+                proxies, texture statistics) recorded over time and environment. Described, never interpreted.
               </p>
             </Card>
-            <Card className="p-4 border-heat/30">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-heat2 mb-2">② Physical model</p>
+            <Card className="p-4 border-heat/30 card-live card-heat">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-heat2 mb-2">② Physical model — separate</p>
               <p className="text-[13px] text-paper/80 leading-relaxed">
                 The T/C_v solver of §07. Runs on declared climate + material parameters. May <i>later</i> be
                 correlated with observation streams — correlation, logged as such, with no causal language.
               </p>
             </Card>
-            <Card className="p-4 border-bad/30">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-bad mb-2">③ Medical interpretation</p>
-              <p className="text-[13px] text-paper/80 leading-relaxed">
-                Forbidden in this project. No disease inference, no textile–dermatology causality, no
-                screening claims. Also keep the triad apart: thermal comfort ≠ physiological heat stress ≠
-                medical outcome.
-              </p>
-            </Card>
+          </div>
+          <div className="border border-bad/30 border-l-2 border-l-bad/70 bg-bad/5 rounded-md p-4 card-live">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-bad mb-2">③ Medical interpretation — forbidden</p>
+            <p className="text-[13px] text-paper/80 leading-relaxed max-w-3xl">
+              No disease inference, no textile–dermatology causality, no screening claims. And keep the triad
+              apart at all times: <b className="text-paper">thermal comfort ≠ physiological heat stress ≠ medical outcome</b>.
+              Image-based skin data enters Dermatherm as context only — it is never a model input and never a
+              basis for a clinical statement.
+            </p>
           </div>
         </Reveal>
       </Section>
