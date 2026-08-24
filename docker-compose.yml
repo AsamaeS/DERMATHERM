@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - NODE_ENV=production
+      - FRONTEND_URL=http://localhost:3000
+      - DATABASE_PATH=/app/data/dermatherm.db
+      - FEATHERLESS_API_KEY=${FEATHERLESS_API_KEY}
+      - FEATHERLESS_MODEL=${FEATHERLESS_MODEL:-Qwen/Qwen2.5-72B-Instruct}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      - WOLFRAM_APP_ID=${WOLFRAM_APP_ID}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://backend:8000
+
+volumes:
+  data:

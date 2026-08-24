@@ -1,245 +1,40 @@
-import { useEffect, useState } from "react";
-import Masthead from "./components/Masthead";
-import { dossierA } from "./data/dossierA";
-import { dossierB } from "./data/dossierB";
+import { useMemo, useState } from "react";
+import { Beaker, BookOpen, ChevronRight, Download, FileText, FlaskConical, HelpCircle, Microscope, Play, Plus, Search, Upload } from "lucide-react";
+import Simulator from "./components/Simulator";
+import PinnBench from "./components/PinnBench";
 
-type NavItem = [string, string, string];
-const NAV: { group: string; items: NavItem[] }[] = [
-  {
-    group: "I · Assessment & physics",
-    items: [
-      ["s01", "01", "Executive assessment"],
-      ["s02", "02", "Refined questions"],
-      ["s03", "03", "Hypotheses"],
-      ["s04", "04", "Related work"],
-      ["s05", "05", "Research gap"],
-      ["s06", "06", "Model audit"],
-      ["s07", "07", "Governing equations"],
-      ["s08", "08", "Variables & units"],
-      ["s09", "09", "Material parameters"],
-      ["s10", "10", "Boundary conditions"],
-      ["s11", "11", "Evaporation model"],
-      ["s12", "12", "2D heterogeneity"],
-    ],
-  },
-  {
-    group: "II · Live apparatus",
-    items: [
-      ["s13", "13", "Numerical solver"],
-      ["s14", "14", "PINN benchmark"],
-    ],
-  },
-  {
-    group: "III · ML, validation, evidence",
-    items: [
-      ["s15", "15", "Loss function"],
-      ["s16", "16", "Validation strategy"],
-      ["s17", "17", "Experiments E1–E6"],
-      ["s18", "18", "Wolfram verification"],
-      ["s19", "19", "Evidence database"],
-      ["s20", "20", "Limitations L-01…"],
-      ["s21", "21", "Contributions"],
-      ["s22", "22", "Industrial relevance"],
-      ["s23", "23", "Future work"],
-      ["s24", "24", "References"],
-    ],
-  },
-  {
-    group: "IV · Protocol & ledger",
-    items: [
-      ["s25", "25", "Minimum model"],
-      ["s26", "26", "Claims ledger"],
-    ],
-  },
+import SkinObservation from "./components/SkinObservation";
+
+type Page = "simulation" | "materials" | "experiments" | "research" | "documentation" | "skin-observation";
+type Material = { id: string; name: string; category: string; thickness: string; k: string; moisture: string; status: "LITERATURE-SUPPORTED" | "ASSUMED / DEMONSTRATION" | "NOT VERIFIED"; source: string; note: string };
+
+const MATERIALS: Material[] = [
+  { id: "MAT-REF-01", name: "Cotton fabric — parameter range", category: "Natural textile", thickness: "Structure-dependent", k: "0.03–0.06", moisture: "Not verified", status: "LITERATURE-SUPPORTED", source: "Dermatherm dossier §09 · handbook-typical range", note: "Range only. A fabric specimen, weave and moisture content are required before a material-specific run." },
+  { id: "MAT-REF-02", name: "PET fibre — parameter range", category: "Synthetic textile", thickness: "Structure-dependent", k: "Not fixed", moisture: "Not verified", status: "LITERATURE-SUPPORTED", source: "Dermatherm dossier §09 · handbook-typical range", note: "Fibre-specific heat capacity is described in the dossier; it is not equivalent to a finished textile." },
+  { id: "MAT-A-01", name: "Homogeneous textile baseline", category: "Computational baseline", thickness: "1.20", k: "0.045", moisture: "1.0 × 10⁻⁵", status: "ASSUMED / DEMONSTRATION", source: "Dermatherm dossier §09 · prototype setting", note: "Baseline used by the in-browser solver. Values are declared assumptions, not measurements." },
+  { id: "MAT-A-02", name: "Heterogeneous plain weave", category: "Computational scenario", thickness: "1.20", k: "0.025–0.10", moisture: "0.3–3.0 × 10⁻⁵", status: "ASSUMED / DEMONSTRATION", source: "Dermatherm dossier §12 · proposed heterogeneity", note: "A spatial-material scenario for sensitivity analysis; it is not a registered commercial textile." },
+  { id: "MAT-NV-01", name: "Uploaded specimen (uncharacterized)", category: "Pending characterization", thickness: "—", k: "—", moisture: "—", status: "NOT VERIFIED", source: "No evidence record attached", note: "Add an evidence record and experimental conditions before this material can be used for defensible interpretation." },
 ];
+const NAV: { id: Page; label: string }[] = [{ id: "simulation", label: "Simulation" }, { id: "materials", label: "Materials Registry" }, { id: "experiments", label: "Experiments" }, { id: "research", label: "Research" }, { id: "skin-observation", label: "Skin Observation" }, { id: "documentation", label: "Documentation" }];
 
-export default function App() {
-  const [active, setActive] = useState("s01");
-  const [progress, setProgress] = useState(0);
+function Status({ value }: { value: Material["status"] }) { const tone = value === "LITERATURE-SUPPORTED" ? "verified" : value === "NOT VERIFIED" ? "unverified" : "assumed"; return <span className={`status ${tone}`}>{value}</span>; }
+function Button({ children, primary = false, onClick, className = "" }: { children: React.ReactNode; primary?: boolean; onClick?: () => void; className?: string }) { return <button onClick={onClick} className={`button ${primary ? "button-primary" : ""} ${className}`}>{children}</button>; }
+function PageTitle({ eyebrow, title, children, actions }: { eyebrow?: string; title: string; children: React.ReactNode; actions?: React.ReactNode }) { return <section className="page-title"><div>{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1><p>{children}</p></div>{actions && <div className="title-actions">{actions}</div>}</section>; }
 
-  useEffect(() => {
-    const ids = NAV.flatMap((g) => g.items.map((i) => i[0]));
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id);
-        });
-      },
-      { rootMargin: "-30% 0px -60% 0px" }
-    );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    });
-    const onScroll = () => {
-      const h = document.documentElement;
-      const p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight);
-      setProgress(p);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => {
-      obs.disconnect();
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, []);
+function SimulationPage({ openMaterials }: { openMaterials: () => void }) { return <><PageTitle eyebrow="COMPUTATIONAL WORKBENCH" title="Coupled transport simulation" actions={<><Button onClick={openMaterials}><BookOpen size={15} /> Material registry</Button><Button primary><Play size={15} /> Run experiment</Button></>}>Configure an extreme-climate boundary condition and inspect the live two-dimensional heat and water-vapour fields.</PageTitle><div className="prototype-notice"><Microscope size={16} /><span><b>Research prototype.</b> Fields are numerical estimates produced locally. They support computational screening; they are not medical assessments or material certification.</span></div><section className="workspace-card sim-workspace"><div className="section-topline"><div><p className="section-label">OBSERVATION DECK</p><h2>Skin–textile interface</h2></div><span className="live-dot">SOLVER LIVE</span></div><Simulator /></section><section className="workspace-card bench-workspace"><div className="section-topline"><div><p className="section-label">MODEL VALIDATION</p><h2>Physics-informed benchmark</h2></div><span className="data-tag">PDE RESIDUAL</span></div><PinnBench /></section></>; }
 
-  return (
-    <div className="relative min-h-screen">
-      <div className="ambient" />
-      <div className="ambient-contours" />
+function CrossSection() { return <svg viewBox="0 0 280 124" className="cross-section" aria-label="Illustrative textile cross-section"><defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="#b6c2d1" strokeWidth="1" /></pattern></defs><text x="14" y="69" fontSize="9" fill="#64748b" transform="rotate(-90 14 69)">1.20 mm</text><rect x="40" y="22" width="210" height="20" fill="#e9eff7" stroke="#94a3b8"/><rect x="40" y="42" width="210" height="28" fill="url(#hatch)" stroke="#94a3b8"/><rect x="40" y="70" width="210" height="22" fill="#dce5f0" stroke="#94a3b8"/><text x="145" y="35" textAnchor="middle" fontSize="10" fill="#60718a">Ambient-facing surface</text><text x="145" y="59" textAnchor="middle" fontSize="10" fill="#475569">Textile transport region</text><text x="145" y="84" textAnchor="middle" fontSize="10" fill="#60718a">Skin-facing surface</text></svg>; }
 
-      {/* top bar */}
-      <div className="fixed top-0 left-0 right-0 z-40">
-        <div className="h-[2.5px] bg-ink3">
-          <div
-            className="h-full"
-            style={{
-              width: `${progress * 100}%`,
-              background: "linear-gradient(90deg, #3ed6c4, #ff6b3d)",
-              transition: "width 0.1s linear",
-            }}
-          />
-        </div>
-        <div className="bg-ink/90 backdrop-blur-sm border-b border-line/70">
-          <div className="max-w-[1440px] mx-auto px-5 md:px-8 h-12 flex items-center justify-between">
-            <a href="#top" className="flex items-center gap-3 group">
-              <svg width="26" height="26" viewBox="0 0 32 32">
-                <rect width="32" height="32" rx="6" fill="#133039" />
-                <path d="M6 22c4-8 8 2 12-6s6-4 8-8" stroke="#ff6b3d" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-                <path d="M6 26c4-4 8 0 12-4s6-2 8-6" stroke="#3ed6c4" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-              </svg>
-              <span className="font-display font-bold tracking-[0.08em] text-paper text-[15px] group-hover:text-heat2 transition-colors">
-                DERMATHERM
-              </span>
-              <span className="hidden md:inline font-mono text-[9.5px] tracking-[0.18em] uppercase text-dim">
-                scientific research assistant · dossier
-              </span>
-            </a>
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-aqua2 border border-aqua/30 px-2 py-1 rounded-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-aqua blink" />
-                solver live
-              </span>
-              <span className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-muted border border-line px-2 py-1 rounded-sm">
-                24 sections + ledger
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+function MaterialsPage({ openSimulation }: { openSimulation: () => void }) { const [query, setQuery] = useState(""); const [selected, setSelected] = useState(MATERIALS[0]); const [status, setStatus] = useState("all"); const results = useMemo(() => MATERIALS.filter((m) => (status === "all" || m.status === status) && `${m.id} ${m.name} ${m.category}`.toLowerCase().includes(query.toLowerCase())), [query, status]); return <><PageTitle title="Materials Registry" actions={<><Button><Upload size={15} /> Bulk import</Button><Button><Download size={15} /> Export (.JSON)</Button><Button primary><Plus size={16} /> Register material</Button></>}>Traceable characterization records for textile parameters. Evidence status stays attached to every value used in an experiment.</PageTitle><section className="registry workspace-card"><aside className="filter-panel"><div><label>SEARCH</label><div className="search-input"><Search size={16}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ID or material name…" /></div></div><div><label>CATEGORY</label><div className="check-list"><span>▣ Natural textiles</span><span>▣ Synthetic textiles</span><span>□ Computational scenarios</span><span>□ Pending records</span></div></div><div className="filter-rule" /><div><div className="range-label"><label>THERMAL COND. (K)</label><span>0.02–0.10 W/m·K</span></div><input type="range" min="0" max="100" value="45" readOnly /></div><div><div className="range-label"><label>VAPOUR DIFFUSIVITY</label><span>Declared</span></div><input type="range" min="0" max="100" value="62" readOnly /></div><div className="filter-rule" /><div><label>VALIDATION STATUS</label><div className="radio-list">{[["all", "All records"], ["LITERATURE-SUPPORTED", "Literature-supported"], ["ASSUMED / DEMONSTRATION", "Assumed / demonstration"], ["NOT VERIFIED", "Not verified"]].map(([id, name]) => <label key={id}><input type="radio" checked={status === id} onChange={() => setStatus(id)} />{name}</label>)}</div></div><Button className="reset" onClick={() => { setQuery(""); setStatus("all"); }}>Reset filters</Button></aside><div className="table-area"><table><thead><tr><th>ID</th><th>Material name</th><th>Category</th><th>Thick. (mm)</th><th>k (W/m·K)</th><th>Moisture transport</th><th>Evidence</th></tr></thead><tbody>{results.map((m) => <tr key={m.id} onClick={() => setSelected(m)} className={selected.id === m.id ? "selected" : ""}><td>{m.id}</td><td className="material-name">{m.name}</td><td>{m.category}</td><td className="numeric">{m.thickness}</td><td className="numeric">{m.k}</td><td className="numeric">{m.moisture}</td><td><Status value={m.status}/></td></tr>)}</tbody></table>{results.length === 0 && <div className="empty-state">No material record matches this search.</div>}</div><aside className="inspector"><div className="inspector-head"><p>{selected.id}</p><h2>{selected.name}</h2><Status value={selected.status}/></div><div className="inspector-body"><label>CROSS-SECTION PROFILE</label><div className="schematic"><CrossSection /></div><label>PARAMETER DECLARATION</label><div className="property-grid"><div><span>Conductivity (k)</span><b>{selected.k} <small>W/m·K</small></b></div><div><span>Thickness</span><b>{selected.thickness} <small>mm</small></b></div><div><span>Vapour transport</span><b>{selected.moisture} <small>m²/s</small></b></div><div><span>Evidence state</span><b>{selected.status === "LITERATURE-SUPPORTED" ? "Supported" : selected.status === "NOT VERIFIED" ? "Missing" : "Assumed"}</b></div></div><label>PROVENANCE</label><p className="provenance">{selected.source}</p><p className="inspector-note">{selected.note}</p></div><div className="inspector-actions"><Button primary onClick={openSimulation}><Play size={15}/> Use in simulation</Button><Button><Plus size={15}/> Add to comparison</Button></div></aside></section></>; }
 
-      <div id="top" className="relative z-10 max-w-[1440px] mx-auto px-5 md:px-8">
-        {/* mobile nav */}
-        <nav className="lg:hidden sticky top-12 z-30 -mx-5 px-5 py-2 bg-ink/95 backdrop-blur border-b border-line/60 overflow-x-auto">
-          <div className="flex gap-1.5 w-max">
-            {NAV.flatMap((g) => g.items).map(([id, no, label]) => (
-              <a
-                key={id}
-                href={`#${id}`}
-                className={`font-mono text-[10px] px-2.5 py-1.5 rounded-sm border whitespace-nowrap transition-colors ${
-                  active === id
-                    ? "border-heat/60 text-heat2 bg-heat/10"
-                    : "border-line text-muted hover:text-paper"
-                }`}
-              >
-                {no}
-              </a>
-            ))}
-          </div>
-        </nav>
+function ExperimentsPage() { const [tab, setTab] = useState("queue"); return <><PageTitle eyebrow="REPRODUCIBILITY LEDGER" title="Experiments" actions={<Button primary><Plus size={16}/> New experiment</Button>}>Every computational run is described by an immutable configuration, parameter evidence and solver version.</PageTitle><section className="workspace-card experiment-layout"><div className="segmented">{[["queue", "Experiment queue"], ["completed", "Completed runs"], ["compare", "Comparison sets"]].map(([id, n]) => <button className={tab === id ? "active" : ""} onClick={() => setTab(id)} key={id}>{n}</button>)}</div><div className="experiment-grid"><article className="experiment-card accent-blue"><div className="card-kicker">EXP-LOCAL-001 · RUNNING</div><h2>Extreme humid heatwave</h2><p>42 °C · 85% RH · 0.4 m/s · plain-weave scenario</p><div className="run-progress"><span /><span /><span /><span /></div><div className="experiment-meta"><span>FTCS coupled solver</span><span>56 × 140 grid</span></div></article><article className="experiment-card"><div className="card-kicker">EXP-LOCAL-002 · CONFIGURED</div><h2>Dry desert sensitivity</h2><p>45 °C · 15% RH · homogeneous textile baseline</p><div className="experiment-meta"><span>Assumed baseline</span><span>Seed: n/a</span></div><Button><Play size={14}/> Start run</Button></article><article className="experiment-card"><div className="card-kicker">EXP-LOCAL-003 · PROPOSED</div><h2>PINN generalization study</h2><p>Planned physics solver / data-only / PINN comparison.</p><div className="experiment-meta"><span>Research plan §17</span><span>Not validated</span></div><Button><FileText size={14}/> Inspect protocol</Button></article></div><div className="ledger"><div className="section-topline"><div><p className="section-label">EXECUTION MANIFEST</p><h2>Current configuration</h2></div><span className="data-tag">REPRODUCIBLE</span></div><table><tbody><tr><th>Research question</th><td>Can a physics-informed surrogate model coupled heat and moisture transport under declared extreme climatic conditions?</td></tr><tr><th>Solver</th><td>Explicit finite-difference (FTCS), browser execution, CFL-limited timestep</td></tr><tr><th>Evidence policy</th><td>Parameters retain the status: literature-supported, assumed / demonstration, or not verified.</td></tr><tr><th>Medical scope</th><td>Out of scope. The platform does not diagnose, treat, predict or score human thermal comfort.</td></tr></tbody></table></div></section></>; }
 
-        <Masthead />
+function ResearchPage() { return <><PageTitle eyebrow="SCIENTIFIC EVIDENCE" title="Research & evidence">The evidence layer separates reported literature, explicit modeling assumptions and proposed validation work.</PageTitle><div className="research-grid"><section className="workspace-card evidence-card"><div className="section-topline"><div><p className="section-label">PARAMETER TRACEABILITY</p><h2>Evidence register</h2></div><Button><Search size={14}/> Search sources</Button></div><table><thead><tr><th>Parameter</th><th>Declared range / statement</th><th>Scope</th><th>Status</th></tr></thead><tbody><tr><td>Effective thermal conductivity k</td><td>0.03–0.06 W·m⁻¹·K⁻¹</td><td>Clothing fabrics, still air</td><td><Status value="LITERATURE-SUPPORTED"/></td></tr><tr><td>Bulk textile density ρ</td><td>400 kg·m⁻³</td><td>Prototype solver setting</td><td><Status value="ASSUMED / DEMONSTRATION"/></td></tr><tr><td>Skin temperature T<sub>skin</sub></td><td>34 °C, fixed boundary</td><td>Model boundary condition</td><td><Status value="ASSUMED / DEMONSTRATION"/></td></tr><tr><td>Material-specific vapour diffusivity</td><td>Not attached to a specimen</td><td>Registry requirement</td><td><Status value="NOT VERIFIED"/></td></tr></tbody></table></section><aside className="method-panel"><p className="section-label">MODEL BOUNDARY</p><h2>What this platform can responsibly say</h2><ol><li>It solves the declared equations for declared parameters.</li><li>It can compare numerical fields across simulated configurations.</li><li>It must label any result that depends on unverified parameters.</li><li>It cannot make clinical, comfort, certification or causality claims.</li></ol><Button><BookOpen size={15}/> Open scientific dossier <ChevronRight size={14}/></Button></aside></div><section className="workspace-card references"><div className="section-topline"><div><p className="section-label">VALIDATION PATH</p><h2>Independent checks</h2></div></div><div className="validation-path"><div><b>01</b><span>Analytical benchmark</span><small>Known heat-equation solution</small></div><div><b>02</b><span>Grid convergence</span><small>Numerical solver audit</small></div><div><b>03</b><span>Physics vs ML</span><small>Compare field-wise errors</small></div><div><b>04</b><span>External referee</span><small>Wolfram plan, if available</small></div></div></section></>; }
 
-        <div className="grid lg:grid-cols-[228px_1fr] gap-10">
-          {/* sidebar */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pr-3 pb-10 space-y-5">
-              {NAV.map((g) => (
-                <div key={g.group}>
-                  <p className="font-mono text-[9px] tracking-[0.2em] uppercase text-dim mb-2">{g.group}</p>
-                  <ul className="space-y-0.5">
-                    {g.items.map(([id, no, label]) => (
-                      <li key={id}>
-                        <a
-                          href={`#${id}`}
-                          className={`nav-item flex items-baseline gap-2.5 pl-3 pr-2 py-[5px] rounded-r-sm text-[12.5px] ${
-                            active === id ? "active text-heat2 bg-heat/8" : "text-muted hover:text-paper hover:bg-ink2/70"
-                          }`}
-                        >
-                          <span className="font-mono text-[10px] w-5 shrink-0 text-dim">{no}</span>
-                          {label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-              <div className="pt-2 border-t border-line/60">
-                <p className="font-mono text-[9px] leading-relaxed text-dim">
-                  evidence regime: Firecrawl retrieval → Qwen extraction → human approval · Wolfram independent
-                  reference · this page computes its own physics.
-                </p>
-              </div>
-            </div>
-          </aside>
+function SkinObservationPage() { return <><PageTitle eyebrow="OPTIONAL MODULE" title="Skin Observation" actions={<Button><HelpCircle size={15}/> View Disclaimer</Button>}>Image-based descriptive observations using YouCam API. This module is completely separate from physics simulation and makes no medical claims.</PageTitle><div className="prototype-notice" style={{background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)", borderColor: "#f59e0b"}}><AlertTriangle size={16} style={{color: "#d97706"}}/><span><b>IMPORTANT BOUNDARIES:</b> This provides descriptive image observations ONLY. It does not diagnose, predict, treat, or establish causality. Observations are image-based data, not medical assessments. Consult a healthcare professional for medical concerns.</span></div><section className="workspace-card"><SkinObservation/></section></>; }
 
-          {/* main column */}
-          <main className="min-w-0 pb-24">
-            {dossierA()}
-            {dossierB()}
+function AlertTriangle({ size, style }: { size: number; style?: React.CSSProperties }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={style}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>; }
 
-            <footer className="border-t border-line/60 pt-10 mt-8">
-              <div className="flex flex-wrap items-start justify-between gap-8">
-                <div className="grid md:grid-cols-3 gap-8 flex-1 min-w-[300px]">
-                  <div>
-                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-heat2 mb-3">Division of labour</p>
-                    <ul className="text-[12.5px] text-paper/75 space-y-2 leading-relaxed">
-                      <li className="hover:text-paper transition-colors"><b className="text-paper">Solver</b> — computes the physics.</li>
-                      <li className="hover:text-paper transition-colors"><b className="text-paper">PINN</b> — learns a physics-constrained surrogate.</li>
-                      <li className="hover:text-paper transition-colors"><b className="text-paper">Qwen</b> — extracts &amp; explains literature; never computes.</li>
-                      <li className="hover:text-paper transition-colors"><b className="text-paper">Wolfram</b> — independent numerical referee.</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-aqua2 mb-3">Non-claims</p>
-                    <p className="text-[12.5px] text-paper/75 leading-relaxed">
-                      DERMATHERM is a computational research prototype. It does not diagnose, treat or predict
-                      medical conditions; it does not score human thermal comfort; it does not certify
-                      materials; it reports simulated behaviour of declared parameters against a numerical
-                      reference.
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-dim mb-3">Artifact</p>
-                    <p className="text-[12.5px] text-paper/75 leading-relaxed">
-                      Dossier v0.1 · pre-registration draft · fields in §13–14 are computed in-browser at
-                      render time · references flagged per DOI-verification rule (§24).
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href="#top"
-                  className="group corner-frame relative border border-line bg-ink2/70 rounded-md px-5 py-4 card-live card-heat flex items-center gap-3"
-                >
-                  <span className="w-8 h-8 rounded-sm border border-heat/50 flex items-center justify-center text-heat group-hover:bg-heat group-hover:text-ink transition-colors">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M7 12V2M3 6l4-4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                  <span>
-                    <span className="block font-mono text-[9px] tracking-[0.22em] uppercase text-dim group-hover:text-heat2 transition-colors">back to interface</span>
-                    <span className="block font-display font-semibold text-[14px] text-paper">fig. 0 ↑</span>
-                  </span>
-                </a>
-              </div>
-              <p className="mt-10 font-mono text-[10px] text-dim tracking-[0.14em] uppercase border-t border-line/40 pt-5">
-                DERMATHERM — physics-informed ML for the skin–textile interface · optimize for defensible, not impressive
-              </p>
-            </footer>
-          </main>
-        </div>
-      </div>
-    </div>
-  );
-}
+function DocumentationPage() { return <><PageTitle eyebrow="OPERATIONAL GUIDE" title="Documentation">A concise guide to the computational model, interpretation boundaries and local workflow.</PageTitle><div className="docs-grid"><section className="workspace-card doc-list"><p className="section-label">START HERE</p><h2>Local workflow</h2><ol><li><b>Choose a material record.</b> Confirm evidence status and conditions.</li><li><b>Configure a climate scenario.</b> Temperature, humidity, air velocity and sweat supply are explicit inputs.</li><li><b>Run the numerical solver.</b> Inspect temperature and vapour fields with units and current solver diagnostics.</li><li><b>Record the experiment.</b> Keep the complete configuration for reproducibility.</li><li><b>(Optional) Skin Observation.</b> Upload images for descriptive analysis using YouCam API — completely separate from physics simulation.</li></ol></section><section className="workspace-card doc-list"><p className="section-label">KNOWN LIMITATIONS</p><h2>Interpret with care</h2><ul><li>Parameters are ranges or declared prototype assumptions unless a source record says otherwise.</li><li>The coupled model is a research formulation, not a validated clinical or product-performance predictor.</li><li>The browser benchmark validates a simplified heat equation, not a completed coupled PINN.</li><li>External integrations are optional and must not change the deterministic solver result.</li><li>Skin observations are image-based descriptive data, NOT medical diagnostics.</li></ul></section></div><section className="workspace-card api-strip"><Beaker size={26}/><div><p className="section-label">SYSTEM STATUS</p><h2>Local computational apparatus ready</h2><p>React + Vite · browser-resident 2D solver · reproducibility-oriented user interface · optional YouCam skin observation</p></div><Button><HelpCircle size={15}/> Read methodology</Button></section></>; }
+
+export default function App() { const [page, setPage] = useState<Page>("materials"); return <div className="app-shell"><div className="disclaimer">RESEARCH PROTOTYPE — PREDICTIONS ARE COMPUTATIONAL ESTIMATES, NOT MEDICAL DIAGNOSES.</div><header className="topbar"><button className="brand" onClick={() => setPage("simulation")}><Microscope size={24}/><span>DERMATHERM</span></button><span className="brand-divider"/><nav>{NAV.map((n) => <button key={n.id} className={page === n.id ? "active" : ""} onClick={() => setPage(n.id)}>{n.label}</button>)}</nav><div className="header-tools"><div className="top-search"><Search size={15}/><span>SEARCH RESEARCH SYSTEMS</span></div><div className="avatar">DR</div></div></header><main>{page === "simulation" && <SimulationPage openMaterials={() => setPage("materials")}/>} {page === "materials" && <MaterialsPage openSimulation={() => setPage("simulation")}/>} {page === "experiments" && <ExperimentsPage/>} {page === "research" && <ResearchPage/>} {page === "skin-observation" && <SkinObservationPage/>} {page === "documentation" && <DocumentationPage/>}</main><footer><div><b><FlaskConical size={17}/> DERMATHERM RESEARCH SYSTEMS</b><p>Computational materials-science R&amp;D platform for coupled thermal and moisture transport research.</p></div><div>LOCAL MODE · RESEARCH PROTOTYPE</div></footer></div>; }
